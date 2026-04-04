@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Greedy Scoring Function</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg: #0d0f14;
+      --surface: #151820;
+      --surface2: #1c2030;
+      --border: #252a3a;
+      --accent: #4f8ef7;
+      --accent2: #f74f6e;
+      --green: #3dd68c;
+      --yellow: #f7c44f;
+      --text: #e8eaf0;
+      --muted: #6b7390;
+      --font-mono: 'Space Mono', monospace;
+      --font-body: 'DM Sans', sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ── */
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 18px 40px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: var(--surface);
+    }
+    .logo {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--accent);
+      background: rgba(79,142,247,0.1);
+      padding: 4px 10px;
+      border-radius: 4px;
+      border: 1px solid rgba(79,142,247,0.3);
+    }
+    header h1 {
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--text);
+    }
+    header p { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    /* ── LAYOUT ── */
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 36px 24px;
+    }
+
+    .grid-2 { display: grid; grid-template-columns: 380px 1fr; gap: 24px; align-items: start; }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+    }
+    .card-title {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-title::before {
+      content: '';
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    /* ── FORM ── */
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+    .form-row.full { grid-template-columns: 1fr; }
+
+    .field label {
+      display: block;
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 6px;
+      font-family: var(--font-mono);
+    }
+    .field input, .field select {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 9px 12px;
+      color: var(--text);
+      font-size: 13px;
+      font-family: var(--font-body);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .field input:focus, .field select:focus { border-color: var(--accent); }
+    .field select option { background: var(--surface2); }
+
+    /* ── TASK LIST ── */
+    #task-list { margin: 14px 0; max-height: 220px; overflow-y: auto; }
+    .task-chip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 12px;
+      margin-bottom: 6px;
+      font-size: 12px;
+      animation: slideIn 0.2s ease;
+    }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+    .task-chip .task-name { font-weight: 500; flex: 1; }
+    .task-chip .task-meta { color: var(--muted); font-size: 11px; font-family: var(--font-mono); margin: 0 10px; }
+    .task-chip .remove-btn {
+      background: none; border: none; color: var(--muted);
+      cursor: pointer; font-size: 16px; line-height: 1;
+      padding: 0 2px; transition: color 0.15s;
+    }
+    .task-chip .remove-btn:hover { color: var(--accent2); }
+
+    /* ── BUTTONS ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 10px 18px;
+      border-radius: 7px;
+      border: none;
+      cursor: pointer;
+      font-size: 13px;
+      font-family: var(--font-body);
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: #3a7de8; transform: translateY(-1px); }
+    .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-success { background: var(--green); color: #0d1a12; }
+    .btn-success:hover { background: #34c47e; transform: translateY(-1px); }
+    .btn-danger { background: rgba(247,79,110,0.15); color: var(--accent2); border: 1px solid rgba(247,79,110,0.3); }
+    .btn-danger:hover { background: rgba(247,79,110,0.25); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+    .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+
+    /* ── STATS ── */
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+    .stat-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      text-align: center;
+    }
+    .stat-box .stat-val {
+      font-family: var(--font-mono);
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--accent);
+      display: block;
+    }
+    .stat-box .stat-val.red { color: var(--accent2); }
+    .stat-box .stat-val.green { color: var(--green); }
+    .stat-box .stat-val.yellow { color: var(--yellow); }
+    .stat-box .stat-label { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+    /* ── TABS ── */
+    .tab-bar {
+      display: flex;
+      gap: 4px;
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 4px;
+      margin-bottom: 20px;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 8px;
+      border: none;
+      border-radius: 5px;
+      background: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 12px;
+      font-family: var(--font-mono);
+      transition: all 0.15s;
+    }
+    .tab-btn.active { background: var(--surface); color: var(--text); }
+
+    /* ── TABLE ── */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    thead tr { border-bottom: 1px solid var(--border); }
+    th { padding: 10px 12px; text-align: left; color: var(--muted); font-family: var(--font-mono); font-size: 10px; font-weight: 400; text-transform: uppercase; letter-spacing: 1px; }
+    td { padding: 10px 12px; border-bottom: 1px solid rgba(37,42,58,0.5); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 10px;
+      font-family: var(--font-mono);
+    }
+    .badge-ok { background: rgba(61,214,140,0.15); color: var(--green); }
+    .badge-late { background: rgba(247,79,110,0.15); color: var(--accent2); }
+    .badge-p1 { background: rgba(107,115,144,0.2); color: var(--muted); }
+    .badge-p2 { background: rgba(247,196,79,0.15); color: var(--yellow); }
+    .badge-p3 { background: rgba(79,142,247,0.15); color: var(--accent); }
+
+    /* ── CHART ── */
+    .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .chart-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+    }
+    .chart-box h4 { font-size: 12px; color: var(--muted); font-family: var(--font-mono); margin-bottom: 14px; }
+
+    /* ── EMPTY / LOADING ── */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted);
+    }
+    .empty-state .icon { font-size: 40px; margin-bottom: 12px; opacity: 0.4; }
+    .empty-state p { font-size: 13px; }
+    .loading { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 40px; color: var(--muted); font-size: 13px; }
+    .spinner { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── TOAST ── */
+    #toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 12px 18px;
+      font-size: 13px; color: var(--text);
+      transform: translateY(80px); opacity: 0;
+      transition: all 0.25s; z-index: 999;
+    }
+    #toast.show { transform: translateY(0); opacity: 1; }
+    #toast.error { border-color: var(--accent2); color: var(--accent2); }
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    @media (max-width: 768px) {
+      .grid-2 { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .chart-grid { grid-template-columns: 1fr; }
+      header { padding: 14px 20px; }
+      .container { padding: 20px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">GSF</div>
+  <div>
+    <h1>Greedy Scoring Function</h1>
+    <p>Algoritma Greedy · Strategi Algoritma 2025/2026 · Informatika · Muthia Febrahma Khoirunnisa & Aam Aminah</p>
+  </div>
+</header>
+
+<div class="container">
+  <div class="grid-2">
+
+    <!-- ── LEFT: INPUT PANEL ── -->
+    <div>
+      <div class="card">
+        <div class="card-title">Input Tugas</div>
+
+        <div class="form-row full">
+          <div class="field">
+            <label>Nama Tugas</label>
+            <input type="text" id="inp-name" placeholder="Contoh: Laporan Praktikum" maxlength="50"/>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label>Deadline (hari)</label>
+            <input type="number" id="inp-deadline" placeholder="1–60" min="1" max="60"/>
+          </div>
+          <div class="field">
+            <label>Prioritas</label>
+            <select id="inp-priority">
+              <option value="1">1 — Rendah</option>
+              <option value="2" selected>2 — Sedang</option>
+              <option value="3">3 — Tinggi</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label>Durasi (jam)</label>
+            <input type="number" id="inp-duration" placeholder="0.5–24" min="0.5" max="24" step="0.5"/>
+          </div>
+          <div class="field">
+            <label>Bobot Nilai (%)</label>
+            <input type="number" id="inp-weight" placeholder="1–100" min="1" max="100"/>
+          </div>
+        </div>
+
+        <button class="btn btn-secondary" onclick="addTask()" style="width:100%;justify-content:center;margin-top:4px;">
+          + Tambah Tugas
+        </button>
+
+        <div id="task-list"></div>
+
+        <div class="btn-row">
+          <button class="btn btn-primary" id="btn-run" onclick="runSchedule()" disabled>
+            ▶ Jadwalkan
+          </button>
+          <button class="btn btn-danger" onclick="clearAll()">
+            ✕ Reset
+          </button>
+        </div>
+      </div>
+
+      <!-- complexity info -->
+      <div class="card" style="margin-top:16px;">
+        <div class="card-title">Kompleksitas Algoritma</div>
+        <div style="font-family:var(--font-mono);font-size:12px;line-height:2;color:var(--muted);">
+          <div><span style="color:var(--accent)">score(t)</span> = 0.4·(1/deadline) + 0.4·priority + 0.2·(weight/duration)</div>
+          <div style="margin-top:8px;"><span style="color:var(--green)">Time </span>: O(n log n)</div>
+          <div><span style="color:var(--green)">Space</span>: O(n)</div>
+          <div><span style="color:var(--yellow)">Class</span>: P (Polynomial)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── RIGHT: RESULT PANEL ── -->
+    <div id="result-panel">
+      <div class="empty-state">
+        <div class="icon">📋</div>
+        <p>Tambahkan tugas lalu klik <strong>Jadwalkan</strong><br>untuk melihat hasil & visualisasi</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  let tasks = [];
+  let lastResult = null;
+  let charts = {};
+
+  // ── ADD TASK ──
+  function addTask() {
+    const name     = document.getElementById('inp-name').value.trim();
+    const deadline = parseInt(document.getElementById('inp-deadline').value);
+    const priority = parseInt(document.getElementById('inp-priority').value);
+    const duration = parseFloat(document.getElementById('inp-duration').value);
+    const weight   = parseFloat(document.getElementById('inp-weight').value);
+
+    if (!name)                           return showToast('Nama tugas wajib diisi!', true);
+    if (!deadline || deadline < 1 || deadline > 60) return showToast('Deadline harus 1–60 hari!', true);
+    if (!duration || duration < 0.5)     return showToast('Durasi minimal 0.5 jam!', true);
+    if (!weight   || weight < 1)         return showToast('Bobot minimal 1%!', true);
+
+    tasks.push({ name, deadline, priority, duration, weight });
+    renderTaskList();
+    clearInputs();
+    document.getElementById('btn-run').disabled = false;
+    document.getElementById('inp-name').focus();
+    showToast(`✓ "${name}" ditambahkan`);
+  }
+
+  function clearInputs() {
+    ['inp-name','inp-deadline','inp-duration','inp-weight'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+  }
+
+  function removeTask(i) {
+    tasks.splice(i, 1);
+    renderTaskList();
+    if (tasks.length === 0) document.getElementById('btn-run').disabled = true;
+  }
+
+  function renderTaskList() {
+    const el = document.getElementById('task-list');
+    if (tasks.length === 0) { el.innerHTML = ''; return; }
+    el.innerHTML = tasks.map((t, i) => `
+      <div class="task-chip">
+        <span class="task-name">${t.name}</span>
+        <span class="task-meta">D:${t.deadline}d · P${t.priority} · ${t.duration}h · ${t.weight}%</span>
+        <button class="remove-btn" onclick="removeTask(${i})">×</button>
+      </div>
+    `).join('');
+  }
+
+  function clearAll() {
+    tasks = []; lastResult = null;
+    renderTaskList();
+    document.getElementById('btn-run').disabled = true;
+    document.getElementById('result-panel').innerHTML = `
+      <div class="empty-state">
+        <div class="icon">📋</div>
+        <p>Tambahkan tugas lalu klik <strong>Jadwalkan</strong><br>untuk melihat hasil & visualisasi</p>
+      </div>`;
+    destroyCharts();
+  }
+
+  // ── RUN SCHEDULE ──
+  async function runSchedule() {
+    if (tasks.length === 0) return;
+
+    document.getElementById('result-panel').innerHTML =
+      '<div class="loading"><div class="spinner"></div> Menjalankan algoritma greedy...</div>';
+
+    try {
+      const res  = await fetch('/api/schedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tasks })
+      });
+      const data = await res.json();
+      if (data.error) return showToast(data.error, true);
+      lastResult = data;
+      renderResult(data);
+    } catch (e) {
+      showToast('Terjadi error. Coba lagi.', true);
+    }
+  }
+
+  // ── RENDER RESULT ──
+  function renderResult(data) {
+    const s = data.summary;
+    destroyCharts();
+
+    document.getElementById('result-panel').innerHTML = `
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-box">
+          <span class="stat-val">${s.total}</span>
+          <div class="stat-label">Total Tugas</div>
+        </div>
+        <div class="stat-box">
+          <span class="stat-val red">${s.late_greedy}</span>
+          <div class="stat-label">Terlambat (Greedy)</div>
+        </div>
+        <div class="stat-box">
+          <span class="stat-val green">${s.reduction}%</span>
+          <div class="stat-label">Reduksi Keterlambatan</div>
+        </div>
+        <div class="stat-box">
+          <span class="stat-val yellow">${s.exec_time_ms}</span>
+          <div class="stat-label">Exec. Time (ms)</div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab('greedy', this)">Jadwal Greedy</button>
+        <button class="tab-btn" onclick="switchTab('random', this)">Jadwal Random</button>
+        <button class="tab-btn" onclick="switchTab('chart', this)">Grafik</button>
+      </div>
+
+      <!-- Tab: Greedy -->
+      <div id="tab-greedy" class="tab-content">
+        <div class="card" style="padding:0;overflow:hidden;">
+          <div class="table-wrap">
+            ${buildTable(data.greedy)}
+          </div>
+        </div>
+        <div class="btn-row" style="margin-top:14px;">
+          <button class="btn btn-success" onclick="downloadCSV()">
+            ↓ Download Excel
+          </button>
+        </div>
+      </div>
+
+      <!-- Tab: Random -->
+      <div id="tab-random" class="tab-content" style="display:none;">
+        <div class="card" style="padding:0;overflow:hidden;">
+          <div class="table-wrap">
+            ${buildTable(data.random, false)}
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Charts -->
+      <div id="tab-chart" class="tab-content" style="display:none;">
+        <div class="chart-grid">
+          <div class="chart-box">
+            <h4>Greedy vs Random — Tugas Terlambat</h4>
+            <canvas id="chart-compare"></canvas>
+          </div>
+          <div class="chart-box">
+            <h4>Distribusi Skor Greedy</h4>
+            <canvas id="chart-score"></canvas>
+          </div>
+          <div class="chart-box">
+            <h4>Timeline Pengerjaan (Greedy)</h4>
+            <canvas id="chart-timeline"></canvas>
+          </div>
+          <div class="chart-box">
+            <h4>Breakdown Status Tugas</h4>
+            <canvas id="chart-status"></canvas>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // render charts after DOM is ready
+    setTimeout(() => buildCharts(data), 50);
+  }
+
+  function buildTable(schedule, showScore = true) {
+    const priorityLabel = p => ['','Rendah','Sedang','Tinggi'][p];
+    const priorityClass = p => ['','badge-p1','badge-p2','badge-p3'][p];
+    const rows = schedule.map((t, i) => `
+      <tr>
+        <td style="color:var(--muted);font-family:var(--font-mono)">${i+1}</td>
+        <td style="font-weight:500">${t.name}</td>
+        ${showScore ? `<td style="font-family:var(--font-mono);color:var(--accent)">${t.score}</td>` : ''}
+        <td>${t.deadline}h</td>
+        <td><span class="badge ${priorityClass(t.priority)}">${priorityLabel(t.priority)}</span></td>
+        <td>${t.duration}j</td>
+        <td style="font-family:var(--font-mono)">${t.start_time}–${t.end_time}</td>
+        <td><span class="badge ${t.is_late ? 'badge-late':'badge-ok'}">${t.is_late ? 'Terlambat':'Tepat Waktu'}</span></td>
+      </tr>`).join('');
+    return `<table>
+      <thead><tr>
+        <th>#</th><th>Nama Tugas</th>
+        ${showScore ? '<th>Skor</th>' : ''}
+        <th>Deadline</th><th>Prioritas</th><th>Durasi</th><th>Waktu (jam)</th><th>Status</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  }
+
+  // ── CHARTS ──
+  function buildCharts(data) {
+    const ACCENT = '#4f8ef7', RED = '#f74f6e', GREEN = '#3dd68c', YELLOW = '#f7c44f';
+    const gridColor = 'rgba(37,42,58,0.8)';
+    const textColor = '#6b7390';
+    const defaults = { color: textColor, grid: { color: gridColor } };
+
+    // 1. Compare bar chart
+    charts.compare = new Chart(document.getElementById('chart-compare'), {
+      type: 'bar',
+      data: {
+        labels: ['Terlambat'],
+        datasets: [
+          { label: 'Greedy', data: [data.summary.late_greedy], backgroundColor: ACCENT, borderRadius: 6 },
+          { label: 'Random', data: [data.summary.late_random], backgroundColor: RED, borderRadius: 6 },
+        ]
+      },
+      options: { responsive: true, plugins: { legend: { labels: { color: textColor } } },
+        scales: { x: { ticks: defaults, grid: defaults.grid }, y: { ticks: defaults, grid: defaults.grid, beginAtZero: true } } }
+    });
+
+    // 2. Score distribution bar
+    charts.score = new Chart(document.getElementById('chart-score'), {
+      type: 'bar',
+      data: {
+        labels: data.greedy.map(t => t.name.length > 12 ? t.name.substring(0,12)+'…' : t.name),
+        datasets: [{ label: 'Skor Greedy', data: data.greedy.map(t => t.score),
+          backgroundColor: data.greedy.map(t => t.is_late ? RED : ACCENT), borderRadius: 4 }]
+      },
+      options: { responsive: true, plugins: { legend: { display: false } },
+        scales: { x: { ticks: { ...defaults, maxRotation: 45 }, grid: defaults.grid },
+                  y: { ticks: defaults, grid: defaults.grid } } }
+    });
+
+    // 3. Timeline (horizontal bar)
+    charts.timeline = new Chart(document.getElementById('chart-timeline'), {
+      type: 'bar',
+      data: {
+        labels: data.greedy.map(t => t.name.length > 14 ? t.name.substring(0,14)+'…' : t.name),
+        datasets: [
+          { label: 'Idle', data: data.greedy.map(t => t.start_time), backgroundColor: 'transparent', borderColor: 'transparent' },
+          { label: 'Durasi', data: data.greedy.map(t => t.duration),
+            backgroundColor: data.greedy.map(t => t.is_late ? RED : GREEN), borderRadius: 3 }
+        ]
+      },
+      options: { indexAxis: 'y', responsive: true,
+        plugins: { legend: { display: false }, tooltip: { callbacks: {
+          label: (ctx) => ctx.datasetIndex === 1 ? ` ${ctx.raw}j` : ''
+        }}},
+        scales: { x: { stacked: true, ticks: defaults, grid: defaults.grid },
+                  y: { stacked: true, ticks: { ...defaults, font: { size: 10 } }, grid: defaults.grid } } }
+    });
+
+    // 4. Doughnut status
+    const late   = data.greedy.filter(t => t.is_late).length;
+    const ontime = data.greedy.length - late;
+    charts.status = new Chart(document.getElementById('chart-status'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Tepat Waktu', 'Terlambat'],
+        datasets: [{ data: [ontime, late], backgroundColor: [GREEN, RED], borderWidth: 0, hoverOffset: 6 }]
+      },
+      options: { responsive: true, cutout: '65%',
+        plugins: { legend: { labels: { color: textColor } } } }
+    });
+  }
+
+  function destroyCharts() {
+    Object.values(charts).forEach(c => c && c.destroy());
+    charts = {};
+  }
+
+  // ── TABS ──
+  function switchTab(name, btn) {
+    document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById('tab-' + name).style.display = 'block';
+    btn.classList.add('active');
+  }
+
+  // ── DOWNLOAD ──
+  async function downloadCSV() {
+    if (!lastResult) return;
+    try {
+      const res  = await fetch('/api/download', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(lastResult)
+      });
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href = url; a.download = 'hasil_greedy_scoring_function.xlsx'; a.click();
+      URL.revokeObjectURL(url);
+      showToast('✓ File berhasil didownload!');
+    } catch (e) {
+      showToast('Gagal download.', true);
+    }
+  }
+
+  // ── TOAST ──
+  function showToast(msg, isError = false) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = 'show' + (isError ? ' error' : '');
+    clearTimeout(el._t);
+    el._t = setTimeout(() => el.className = '', 2800);
+  }
+
+  // Enter key on name field
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('inp-name').addEventListener('keydown', e => {
+      if (e.key === 'Enter') addTask();
+    });
+  });
+</script>
+</body>
+</html>
